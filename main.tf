@@ -140,7 +140,7 @@ module "databricks_workspace" {
 }
 
 data "azuread_service_principal" "dbr_mi" {
-  display_name = azurerm_databricks_workspace.this.name
+  display_name = module.databricks_workspace.name
 }
 
 module "data_factory" {
