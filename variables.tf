@@ -1,3 +1,8 @@
-variable "env" {} variable "region_short" {} variable "tier" {} variable "location" {}
-variable "admin_username" {} variable "admin_ssh_public_key" {} variable "vm_size" {}
-variable "tags" { type=map(string) }
+variable "env" { type = string }
+variable "region_short" { type = string }
+variable "tier" { type = string }
+variable "location" { type = string }
+variable "admin_username" { type = string }
+variable "admin_ssh_public_key" { type = string }
+variable "vm_size" { type = string }
+variable "tags" { type = map(string) }

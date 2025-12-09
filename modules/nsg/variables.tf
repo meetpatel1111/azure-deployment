@@ -1,1 +1,15 @@
-variable "name" {} variable "location" {} variable "resource_group_name" {} variable "tags" { type=map(string) }
+variable "name" {
+  type = string
+}
+
+variable "location" {
+  type = string
+}
+
+variable "resource_group_name" {
+  type = string
+}
+
+variable "tags" {
+  type = map(string)
+}
