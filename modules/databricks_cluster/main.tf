@@ -8,9 +8,13 @@ terraform {
 }
 
 resource "databricks_cluster" "this" {
-  cluster_name            = var.cluster_name
-  spark_version           = var.spark_version
-  node_type_id            = var.node_type_id
-  num_workers             = var.num_workers
-  autotermination_minutes = var.auto_termination_minutes
+  cluster_name        = var.cluster_name
+  spark_version       = var.spark_version
+  node_type_id        = var.node_type_id
+  driver_node_type_id = var.node_type_id
+  num_workers         = var.num_workers
+
+  azure_attributes {
+    availability = "ON_DEMAND_AZURE"
+  }
 }
