@@ -7,8 +7,29 @@ locals {
   pip_name    = "pip-${local.suffix}"
   nic_name    = "nic-${local.suffix}"
   vm_name     = "vm-${local.suffix}"
-  vnet_cidr   = "10.60.0.0/16"
-  subnet_cidr = "10.60.1.0/24"
+
+  # Storage account naming (no hyphens allowed)
+  storage_account_name = "st${replace(local.suffix, "-", "")}"
+  vnet_cidr            = "10.60.0.0/16"
+  subnet_cidr          = "10.60.1.0/24"
+}
+
+module "storage_account" {
+  source                   = "./modules/storage_account"
+  name                     = local.storage_account_name
+  location                 = var.location
+  resource_group_name      = azurerm_resource_group.rg.name
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  tags                     = var.tags
+}
+
+module "iam_rg" {
+  source               = "./modules/iam"
+  count                = var.iam_principal_id == "" ? 0 : 1
+  scope                = azurerm_resource_group.rg.id
+  role_definition_name = var.iam_role_definition_name
+  principal_id         = var.iam_principal_id
 }
 
 resource "azurerm_resource_group" "rg" {
