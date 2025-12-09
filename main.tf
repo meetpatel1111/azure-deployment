@@ -140,7 +140,7 @@ module "databricks_workspace" {
 }
 
 data "azuread_service_principal" "dbr_mi" {
-  display_name = module.databricks_workspace.name
+  display_name = module.databricks_workspace[0].name
 }
 
 module "data_factory" {
@@ -169,7 +169,7 @@ module "databricks_cluster" {
 }
 
 resource "azurerm_role_assignment" "dbr_ws_contributor" {
-  scope                = module.databricks_workspace.workspace_id
+  scope                = module.databricks_workspace[0].workspace_id
   role_definition_name = "Contributor"
   principal_id         = data.azuread_service_principal.dbr_mi.object_id
 }
