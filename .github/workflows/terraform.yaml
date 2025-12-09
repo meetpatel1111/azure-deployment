@@ -22,7 +22,7 @@ jobs:
     name: "Deploy to ${{ github.event.inputs.environment }}"
 
     env:
-      TF_WORKING_DIR: terraform
+      TF_WORKING_DIR: .
       ENVIRONMENT: ${{ github.event.inputs.environment }}
       TF_VAR_FILE: env/${{ github.event.inputs.environment }}/${{ github.event.inputs.environment }}.tfvars
 
