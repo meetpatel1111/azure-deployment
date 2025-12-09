@@ -9,7 +9,7 @@ variable "spark_version" {
 
 variable "node_type_id" {
   type    = string
-  default = "Standard_DS3_v2"
+  default = "Standard_D2as_v5"
 }
 
 variable "num_workers" {
@@ -20,8 +20,4 @@ variable "num_workers" {
 variable "auto_termination_minutes" {
   type    = number
   default = 30
-}
-
-variable "tags" {
-  type = map(string)
 }
