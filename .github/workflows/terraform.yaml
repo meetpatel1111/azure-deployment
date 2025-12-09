@@ -37,6 +37,12 @@ jobs:
       TF_VAR_FILE: env/${{ github.event.inputs.environment }}/${{ github.event.inputs.environment }}.tfvars
       ACTION: ${{ github.event.inputs.action }}
 
+      # Backend values
+      BACKEND_RG: tfstate-uks-shared-rg
+      BACKEND_SA: sttfstateshared
+      BACKEND_CONTAINER: terraform
+      BACKEND_KEY: ${{ github.event.inputs.environment }}.tfstate
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -52,7 +58,7 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Export ARM credentials for Terraform
+      # Export ARM_* credentials for Terraform + backend
       - name: Export ARM Credentials
         run: |
           CREDS='${{ secrets.AZURE_CREDENTIALS }}'
@@ -61,17 +67,52 @@ jobs:
           echo "ARM_SUBSCRIPTION_ID=$(echo $CREDS | jq -r .subscriptionId)" >> $GITHUB_ENV
           echo "ARM_TENANT_ID=$(echo $CREDS | jq -r .tenantId)" >> $GITHUB_ENV
 
-      # Terraform Init
-      - name: Terraform Init
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform init
+      # 💠 Ensure Remote Backend Exists
+      - name: Ensure Terraform Azure Backend Exists
+        run: |
+          echo "Ensuring backend resources exist..."
+          
+          # Create Resource Group if missing
+          az group create \
+            --name $BACKEND_RG \
+            --location uksouth \
+            --output none
 
-      # Terraform FMT
+          # Create Storage Account if missing
+          if ! az storage account show --name $BACKEND_SA --resource-group $BACKEND_RG --output none 2>/dev/null; then
+            az storage account create \
+              --name $BACKEND_SA \
+              --resource-group $BACKEND_RG \
+              --location uksouth \
+              --sku Standard_LRS \
+              --encryption-services blob \
+              --output none
+          fi
+
+          # Create container if missing
+          SA_KEY=$(az storage account keys list --resource-group $BACKEND_RG --account-name $BACKEND_SA --query "[0].value" -o tsv)
+
+          az storage container create \
+            --name $BACKEND_CONTAINER \
+            --account-name $BACKEND_SA \
+            --account-key $SA_KEY \
+            --auth-mode key \
+            --output none
+
+      # Terraform Init WITH Backend Configuration
+      - name: Terraform Init (Remote Backend)
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          terraform init -reconfigure \
+            -backend-config="resource_group_name=$BACKEND_RG" \
+            -backend-config="storage_account_name=$BACKEND_SA" \
+            -backend-config="container_name=$BACKEND_CONTAINER" \
+            -backend-config="key=$BACKEND_KEY"
+
       - name: Terraform FMT
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform fmt -check
 
-      # Terraform Validate
       - name: Terraform Validate
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform validate
