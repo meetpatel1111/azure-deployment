@@ -3,6 +3,6 @@ region_short         = "uks"
 tier                 = "dev"
 location             = "UK South"
 admin_username       = "azureuser"
-admin_ssh_public_key = "SHA256:q+ZwqZQK8DEG5AW605DjMXjQAPIS5d4kp2kNSsLMSaU azure_vm"
+admin_ssh_public_key = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFWwNO1qQ7zyiAtAFJ+6+/XOzHCAilYJ7WE5C13I1EKb azure_vm"
 vm_size              = "Standard_B2s"
 tags                 = { environment = "dev", owner = "team-devops" }
