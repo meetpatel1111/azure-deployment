@@ -159,8 +159,6 @@ module "databricks_cluster" {
   node_type_id  = "Standard_DS3_v2"
   num_workers   = var.databricks_cluster_size
 
-  tags = var.tags
-
   depends_on = [
     module.databricks_workspace
   ]
