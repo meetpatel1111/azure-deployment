@@ -171,17 +171,18 @@ module "databricks_cluster" {
 resource "azurerm_role_assignment" "dbr_ws_contributor" {
   scope                = module.databricks_workspace[0].workspace_id
   role_definition_name = "Contributor"
-  principal_id         = data.azuread_service_principal.dbr_mi.object_id
+  principal_id         = module.databricks_workspace[0].managed_identity_principal_id
 }
 
 resource "azurerm_role_assignment" "dbr_ws_vnet_contrib" {
   scope                = module.vnet.vnet_id
   role_definition_name = "Contributor"
-  principal_id         = data.azuread_service_principal.dbr_mi.object_id
+  principal_id         = module.databricks_workspace[0].managed_identity_principal_id
 }
 
 resource "azurerm_role_assignment" "dbr_ws_storage_blob" {
   scope                = module.storage_account.storage_account_id
   role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = data.azuread_service_principal.dbr_mi.object_id
+  principal_id         = module.databricks_workspace[0].managed_identity_principal_id
 }
+
