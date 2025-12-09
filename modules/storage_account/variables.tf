@@ -24,3 +24,7 @@ variable "account_replication_type" {
 variable "tags" {
   type = map(string)
 }
+
+output "storage_account_id" {
+  value = azurerm_storage_account.this.id
+}

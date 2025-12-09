@@ -139,6 +139,10 @@ module "databricks_workspace" {
   tags                        = var.tags
 }
 
+data "azuread_service_principal" "dbr_mi" {
+  display_name = azurerm_databricks_workspace.this.name
+}
+
 module "data_factory" {
   count  = var.adf_enabled ? 1 : 0
   source = "./modules/data_factory"
@@ -165,19 +169,19 @@ module "databricks_cluster" {
 }
 
 resource "azurerm_role_assignment" "dbr_ws_contributor" {
-  scope                = module.databricks_workspace[0].workspace_id
+  scope                = module.databricks_workspace.workspace_id
   role_definition_name = "Contributor"
-  principal_id         = module.databricks_workspace[0].managed_identity.principal_id
+  principal_id         = data.azuread_service_principal.dbr_mi.object_id
 }
 
 resource "azurerm_role_assignment" "dbr_ws_vnet_contrib" {
   scope                = module.vnet.vnet_id
   role_definition_name = "Contributor"
-  principal_id         = module.databricks_workspace[0].managed_identity.principal_id
+  principal_id         = data.azuread_service_principal.dbr_mi.object_id
 }
 
 resource "azurerm_role_assignment" "dbr_ws_storage_blob" {
   scope                = module.storage_account.storage_account_id
   role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = module.databricks_workspace[0].managed_identity.principal_id
+  principal_id         = data.azuread_service_principal.dbr_mi.object_id
 }

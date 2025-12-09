@@ -18,3 +18,6 @@ provider "azurerm" {
 provider "databricks" {
   host = module.databricks_workspace[0].workspace_url
 }
+
+provider "azuread" {
+}
