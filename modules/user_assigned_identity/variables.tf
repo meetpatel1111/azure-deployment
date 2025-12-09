@@ -10,19 +10,6 @@ variable "resource_group_name" {
   type = string
 }
 
-variable "sku" {
-  type = string
-}
-
-variable "managed_resource_group_name" {
-  type = string
-}
-
 variable "tags" {
   type = map(string)
-}
-
-variable "no_public_ip" {
-  type    = bool
-  default = true
 }

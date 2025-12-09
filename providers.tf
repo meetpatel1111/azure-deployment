@@ -8,6 +8,10 @@ terraform {
       source  = "databricks/databricks"
       version = "~> 1.99.0"
     }
+    azuread = {
+      source  = "hashicorp/azuread"
+      version = "~> 2.47.0"
+    }
   }
 }
 
@@ -15,9 +19,12 @@ provider "azurerm" {
   features {}
 }
 
-provider "databricks" {
-  host = module.databricks_workspace[0].workspace_url
-}
+provider "azuread" {}
 
-provider "azuread" {
+# ------------------------------
+# SINGLE CORRECT DATABRICKS PROVIDER
+# ------------------------------
+provider "databricks" {
+  azure_workspace_resource_id = module.databricks_workspace[0].workspace_id
+  azure_client_id             = module.uami.client_id
 }

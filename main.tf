@@ -13,6 +13,7 @@ locals {
   databricks_name  = "dbr-${local.suffix}"
   databricks_mrg   = "dbr-mrg-${local.suffix}"
   datafactory_name = "adf-${local.suffix}-01"
+  uami_name        = "id-${local.suffix}"
 
   # Storage account naming (no hyphens allowed)
   storage_account_name = "st${replace(local.suffix, "-", "")}"
@@ -112,6 +113,14 @@ module "nic" {
   tags                = var.tags
 }
 
+module "uami" {
+  source              = "./modules/user_assigned_identity"
+  name                = local.uami_name
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+  tags                = var.tags
+}
+
 # ------------------------------
 # VM
 # ------------------------------
@@ -139,10 +148,6 @@ module "databricks_workspace" {
   tags                        = var.tags
 }
 
-data "azuread_service_principal" "dbr_mi" {
-  display_name = module.databricks_workspace[0].name
-}
-
 module "data_factory" {
   count  = var.adf_enabled ? 1 : 0
   source = "./modules/data_factory"
@@ -168,21 +173,22 @@ module "databricks_cluster" {
   ]
 }
 
-resource "azurerm_role_assignment" "dbr_ws_contributor" {
+resource "azurerm_role_assignment" "uami_to_workspace" {
   scope                = module.databricks_workspace[0].workspace_id
   role_definition_name = "Contributor"
-  principal_id         = module.databricks_workspace[0].managed_identity_principal_id
+  principal_id         = module.uami.principal_id
+
+  depends_on = [module.databricks_workspace]
 }
 
-resource "azurerm_role_assignment" "dbr_ws_vnet_contrib" {
-  scope                = module.vnet.vnet_id
-  role_definition_name = "Contributor"
-  principal_id         = module.databricks_workspace[0].managed_identity_principal_id
-}
-
-resource "azurerm_role_assignment" "dbr_ws_storage_blob" {
+resource "azurerm_role_assignment" "uami_to_storage" {
   scope                = module.storage_account.storage_account_id
   role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = module.databricks_workspace[0].managed_identity_principal_id
+  principal_id         = module.uami.principal_id
 }
 
+resource "azurerm_role_assignment" "uami_to_vnet" {
+  scope                = module.vnet.vnet_id
+  role_definition_name = "Contributor"
+  principal_id         = module.uami.principal_id
+}
