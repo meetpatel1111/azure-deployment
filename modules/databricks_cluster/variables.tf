@@ -9,7 +9,7 @@ variable "spark_version" {
 
 variable "node_type_id" {
   type    = string
-  default = "Standard_DS4_v2"
+  default = "Standard_F4"
 }
 
 variable "num_workers" {
