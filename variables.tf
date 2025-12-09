@@ -41,3 +41,28 @@ variable "iam_role_definition_name" {
   type        = string
   default     = "Reader"
 }
+
+variable "databricks_enabled" {
+  type    = bool
+  default = false
+}
+
+variable "databricks_sku" {
+  type    = string
+  default = "premium"
+}
+
+variable "adf_enabled" {
+  type    = bool
+  default = false
+}
+
+variable "databricks_cluster_enabled" {
+  type    = bool
+  default = false
+}
+
+variable "databricks_cluster_size" {
+  type    = number
+  default = 1
+}

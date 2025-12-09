@@ -2,14 +2,17 @@
 # LOCALS
 # ------------------------------
 locals {
-  suffix      = "${var.env}-${var.region_short}-${var.tier}"
-  rg_name     = "rg-${local.suffix}"
-  vnet_name   = "vnet-${local.suffix}"
-  subnet_name = "subnet-${local.suffix}"
-  nsg_name    = "nsg-${local.suffix}"
-  pip_name    = "pip-${local.suffix}"
-  nic_name    = "nic-${local.suffix}"
-  vm_name     = "vm-${local.suffix}"
+  suffix           = "${var.env}-${var.region_short}-${var.tier}"
+  rg_name          = "rg-${local.suffix}"
+  vnet_name        = "vnet-${local.suffix}"
+  subnet_name      = "subnet-${local.suffix}"
+  nsg_name         = "nsg-${local.suffix}"
+  pip_name         = "pip-${local.suffix}"
+  nic_name         = "nic-${local.suffix}"
+  vm_name          = "vm-${local.suffix}"
+  databricks_name  = "dbr-${local.suffix}"
+  databricks_mrg   = "dbr-mrg-${local.suffix}"
+  datafactory_name = "adf-${local.suffix}"
 
   # Storage account naming (no hyphens allowed)
   storage_account_name = "st${replace(local.suffix, "-", "")}"
@@ -122,4 +125,43 @@ module "vm" {
   admin_ssh_public_key = var.admin_ssh_public_key
   vm_size              = var.vm_size
   tags                 = var.tags
+}
+
+module "databricks_workspace" {
+  count  = var.databricks_enabled ? 1 : 0
+  source = "./modules/databricks_workspace"
+
+  name                        = local.databricks_name
+  location                    = var.location
+  resource_group_name         = azurerm_resource_group.rg.name
+  sku                         = var.databricks_sku
+  managed_resource_group_name = local.databricks_mrg
+  tags                        = var.tags
+}
+
+module "data_factory" {
+  count  = var.adf_enabled ? 1 : 0
+  source = "./modules/data_factory"
+
+  name                = local.datafactory_name
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+  tags                = var.tags
+}
+
+module "databricks_cluster" {
+  count = var.databricks_enabled && var.databricks_cluster_enabled ? 1 : 0
+
+  source = "./modules/databricks_cluster"
+
+  cluster_name  = "cluster-${local.suffix}"
+  spark_version = "13.3.x-scala2.12"
+  node_type_id  = "Standard_DS3_v2"
+  num_workers   = var.databricks_cluster_size
+
+  tags = var.tags
+
+  depends_on = [
+    module.databricks_workspace
+  ]
 }

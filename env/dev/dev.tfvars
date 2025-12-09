@@ -11,3 +11,8 @@ tags = {
 }
 iam_principal_id         = "5f51ed99-836d-4154-90c4-b78e56186431"
 iam_role_definition_name = "Contributor"
+
+adf_enabled                = true
+databricks_enabled         = true
+databricks_cluster_enabled = true
+databricks_cluster_size    = 1
