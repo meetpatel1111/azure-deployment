@@ -1,0 +1,84 @@
+name: Terraform Manual Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Select environment to deploy"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - test
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform-deploy:
+    runs-on: ubuntu-latest
+    name: "Deploy to ${{ github.event.inputs.environment }}"
+
+    env:
+      TF_WORKING_DIR: terraform
+      ENVIRONMENT: ${{ github.event.inputs.environment }}
+      TF_VAR_FILE: env/${{ github.event.inputs.environment }}/${{ github.event.inputs.environment }}.tfvars
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+
+      # Azure Login
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Export ARM_* environment variables for Terraform
+      - name: Set Azure Credentials for Terraform
+        run: |
+          CREDS_JSON='${{ secrets.AZURE_CREDENTIALS }}'
+          echo "ARM_CLIENT_ID=$(echo $CREDS_JSON | jq -r .clientId)" >> $GITHUB_ENV
+          echo "ARM_CLIENT_SECRET=$(echo $CREDS_JSON | jq -r .clientSecret)" >> $GITHUB_ENV
+          echo "ARM_SUBSCRIPTION_ID=$(echo $CREDS_JSON | jq -r .subscriptionId)" >> $GITHUB_ENV
+          echo "ARM_TENANT_ID=$(echo $CREDS_JSON | jq -r .tenantId)" >> $GITHUB_ENV
+
+      # Terraform Init
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init
+
+      # Terraform Format Check
+      - name: Terraform FMT
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform fmt -check
+
+      # Terraform Validate
+      - name: Terraform Validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform validate
+
+      # Terraform Plan
+      - name: Terraform Plan
+        id: plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform plan -var-file=${{ env.TF_VAR_FILE }} -out=tfplan
+
+      # Upload Plan
+      - name: Upload Terraform Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: plan-${{ env.ENVIRONMENT }}
+          path: terraform/tfplan
+
+      # Terraform Apply
+      - name: Terraform Apply
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform apply -auto-approve tfplan

@@ -1,0 +1,2 @@
+variable "name" {} variable "location" {} variable "resource_group_name" {} variable "vm_size" {}
+variable "admin_username" {} variable "admin_ssh_public_key" {} variable "nic_id" {} variable "tags" {}

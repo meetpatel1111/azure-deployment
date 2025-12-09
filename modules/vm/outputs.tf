@@ -1,0 +1,1 @@
+output "vm_name" { value=var.name }
