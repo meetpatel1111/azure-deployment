@@ -4,13 +4,23 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "Select environment to deploy"
+        description: "Select environment"
+        type: choice
         required: true
         default: "dev"
-        type: choice
         options:
           - dev
           - test
+
+      action:
+        description: "Terraform Action"
+        type: choice
+        required: true
+        default: "plan"
+        options:
+          - plan
+          - apply
+          - destroy
 
 permissions:
   id-token: write
@@ -19,12 +29,13 @@ permissions:
 jobs:
   terraform-deploy:
     runs-on: ubuntu-latest
-    name: "Deploy to ${{ github.event.inputs.environment }}"
+    name: "${{ github.event.inputs.action }} on ${{ github.event.inputs.environment }}"
 
     env:
       TF_WORKING_DIR: .
       ENVIRONMENT: ${{ github.event.inputs.environment }}
       TF_VAR_FILE: env/${{ github.event.inputs.environment }}/${{ github.event.inputs.environment }}.tfvars
+      ACTION: ${{ github.event.inputs.action }}
 
     steps:
       - name: Checkout repository
@@ -41,21 +52,21 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Export ARM_* environment variables for Terraform
-      - name: Set Azure Credentials for Terraform
+      # Export ARM credentials for Terraform
+      - name: Export ARM Credentials
         run: |
-          CREDS_JSON='${{ secrets.AZURE_CREDENTIALS }}'
-          echo "ARM_CLIENT_ID=$(echo $CREDS_JSON | jq -r .clientId)" >> $GITHUB_ENV
-          echo "ARM_CLIENT_SECRET=$(echo $CREDS_JSON | jq -r .clientSecret)" >> $GITHUB_ENV
-          echo "ARM_SUBSCRIPTION_ID=$(echo $CREDS_JSON | jq -r .subscriptionId)" >> $GITHUB_ENV
-          echo "ARM_TENANT_ID=$(echo $CREDS_JSON | jq -r .tenantId)" >> $GITHUB_ENV
+          CREDS='${{ secrets.AZURE_CREDENTIALS }}'
+          echo "ARM_CLIENT_ID=$(echo $CREDS | jq -r .clientId)" >> $GITHUB_ENV
+          echo "ARM_CLIENT_SECRET=$(echo $CREDS | jq -r .clientSecret)" >> $GITHUB_ENV
+          echo "ARM_SUBSCRIPTION_ID=$(echo $CREDS | jq -r .subscriptionId)" >> $GITHUB_ENV
+          echo "ARM_TENANT_ID=$(echo $CREDS | jq -r .tenantId)" >> $GITHUB_ENV
 
       # Terraform Init
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform init
 
-      # Terraform Format Check
+      # Terraform FMT
       - name: Terraform FMT
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform fmt -check
@@ -67,12 +78,12 @@ jobs:
 
       # Terraform Plan
       - name: Terraform Plan
-        id: plan
+        if: env.ACTION == 'plan'
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform plan -var-file=${{ env.TF_VAR_FILE }} -out=tfplan
 
-      # Upload Plan
-      - name: Upload Terraform Plan
+      - name: Upload Plan
+        if: env.ACTION == 'plan'
         uses: actions/upload-artifact@v4
         with:
           name: plan-${{ env.ENVIRONMENT }}
@@ -80,5 +91,12 @@ jobs:
 
       # Terraform Apply
       - name: Terraform Apply
+        if: env.ACTION == 'apply'
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform apply -auto-approve tfplan
+        run: terraform apply -auto-approve -var-file=${{ env.TF_VAR_FILE }}
+
+      # Terraform Destroy
+      - name: Terraform Destroy
+        if: env.ACTION == 'destroy'
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform destroy -auto-approve -var-file=${{ env.TF_VAR_FILE }}
