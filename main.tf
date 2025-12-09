@@ -165,7 +165,7 @@ module "databricks_cluster" {
 
   cluster_name  = "cluster-${local.suffix}"
   spark_version = "13.3.x-scala2.12"
-  node_type_id  = "Standard_DS3_v2"
+  node_type_id  = "Standard_D4_v3"
   num_workers   = var.databricks_cluster_size
 
   depends_on = [
