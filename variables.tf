@@ -60,7 +60,23 @@ variable "allowed_rdp_cidrs" {
 }
 
 
-# Feature flags (if you don’t already have these)
+
+variable "azure_client_id" {
+  description = "Client ID of the SPN used for Databricks provider (same as ARM_CLIENT_ID)"
+  type        = string
+}
+
+variable "azure_client_secret" {
+  description = "Client secret of the SPN used for Databricks provider"
+  type        = string
+  sensitive   = true
+}
+
+variable "azure_tenant_id" {
+  description = "Tenant ID of the SPN used for Databricks provider"
+  type        = string
+}
+
 variable "databricks_enabled" {
   type        = bool
   default     = true
