@@ -136,37 +136,63 @@ module "dbr_public_subnet" {
 # ------------------------------
 # NSG
 # ------------------------------
-module "nsg" {
-  source = "./modules/nsg"
-
-  name                = local.nsg_name
+# VM NSG
+module "nsg_vm" {
+  source              = "./modules/nsg"
+  name                = "nsg-${local.suffix}-vm"
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
 
   allowed_ssh_cidrs = var.allowed_ssh_cidrs
   allowed_rdp_cidrs = var.allowed_rdp_cidrs
+  tags              = var.tags
+}
 
-  tags = var.tags
+# Databricks PRIVATE subnet NSG
+module "nsg_dbr_private" {
+  source              = "./modules/nsg"
+  name                = "nsg-${local.suffix}-dbr-private"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  # Databricks does NOT allow inbound traffic except internal Azure
+  allowed_ssh_cidrs = []
+  allowed_rdp_cidrs = []
+  tags              = var.tags
+}
+
+# Databricks PUBLIC subnet NSG
+module "nsg_dbr_public" {
+  source              = "./modules/nsg"
+  name                = "nsg-${local.suffix}-dbr-public"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  allowed_ssh_cidrs = []
+  allowed_rdp_cidrs = []
+  tags              = var.tags
 }
 
 resource "azurerm_network_interface_security_group_association" "vm_nsg" {
   network_interface_id      = module.nic.nic_id
   network_security_group_id = module.nsg.nsg_id
 }
-
-resource "azurerm_subnet_network_security_group_association" "subnet_nsg" {
+# VM subnet
+resource "azurerm_subnet_network_security_group_association" "vm_subnet" {
   subnet_id                 = module.subnet.subnet_id
-  network_security_group_id = module.nsg.nsg_id
+  network_security_group_id = module.nsg_vm.nsg_id
 }
 
+# Databricks private subnet
 resource "azurerm_subnet_network_security_group_association" "dbr_private" {
   subnet_id                 = module.dbr_private_subnet.subnet_id
-  network_security_group_id = azurerm_network_security_group.dbr_private.id
+  network_security_group_id = module.nsg_dbr_private.nsg_id
 }
 
+# Databricks public subnet
 resource "azurerm_subnet_network_security_group_association" "dbr_public" {
   subnet_id                 = module.dbr_public_subnet.subnet_id
-  network_security_group_id = azurerm_network_security_group.dbr_public.id
+  network_security_group_id = module.nsg_dbr_public.nsg_id
 }
 
 # ------------------------------
