@@ -381,8 +381,23 @@ resource "databricks_cluster_policy" "standard" {
       default = 1
     }
     node_type_id = {
-      type   = "allowlist"
-      values = ["*"]
+      type = "allowlist"
+      values = [
+        "Standard_D", # Balanced compute/memory
+        "Standard_DS",
+        "Standard_DSv3",
+        "Standard_DSv4",
+        "Standard_DSv5",
+
+        "Standard_F", # Compute optimized
+        "Standard_F4",
+        "Standard_FSv2",
+
+        "Standard_E", # Memory optimized
+        "Standard_Esv3",
+        "Standard_Esv4",
+        "Standard_Esv5"
+      ]
     }
   })
 }
