@@ -42,11 +42,6 @@ variable "iam_role_definition_name" {
   default     = "Reader"
 }
 
-variable "databricks_enabled" {
-  type    = bool
-  default = false
-}
-
 variable "databricks_sku" {
   type    = string
   default = "premium"

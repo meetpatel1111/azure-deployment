@@ -14,22 +14,6 @@ variable "vnet_name" {
   type = string
 }
 
-variable "name" {
-  type = string
-}
-
-variable "cidr" {
-  type = string
-}
-
-variable "resource_group_name" {
-  type = string
-}
-
-variable "vnet_name" {
-  type = string
-}
-
 # NEW: private endpoint / private link flags
 variable "private_endpoint_network_policies" {
   type        = string
