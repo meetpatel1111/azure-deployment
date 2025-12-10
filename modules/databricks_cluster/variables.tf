@@ -21,3 +21,8 @@ variable "auto_termination_minutes" {
   type    = number
   default = 30
 }
+
+variable "policy_id" {
+  type        = string
+  description = "Cluster policy ID to enforce on this cluster"
+}

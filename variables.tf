@@ -52,21 +52,6 @@ variable "databricks_sku" {
   default = "premium"
 }
 
-variable "adf_enabled" {
-  type    = bool
-  default = false
-}
-
-variable "databricks_cluster_enabled" {
-  type    = bool
-  default = false
-}
-
-variable "databricks_cluster_size" {
-  type    = number
-  default = 1
-}
-
 variable "allowed_ssh_cidrs" {
   type        = list(string)
   description = "Allowed source CIDRs for SSH inbound rules"
@@ -77,4 +62,57 @@ variable "allowed_rdp_cidrs" {
   type        = list(string)
   description = "Allowed source CIDRs for RDP inbound rules"
   default     = [] # You can override in tfvars
+}
+
+# Databricks / AAD auth
+variable "azure_client_id" {
+  description = "Client ID of the SPN used for Databricks provider (same as ARM_CLIENT_ID)"
+  type        = string
+}
+
+variable "azure_client_secret" {
+  description = "Client secret of the SPN used for Databricks provider"
+  type        = string
+  sensitive   = true
+}
+
+variable "azure_tenant_id" {
+  description = "Tenant ID of the SPN used for Databricks provider"
+  type        = string
+}
+
+# Feature flags (if you don’t already have these)
+variable "databricks_enabled" {
+  type        = bool
+  default     = true
+  description = "Whether to deploy Databricks workspace"
+}
+
+variable "databricks_cluster_enabled" {
+  type        = bool
+  default     = true
+  description = "Whether to deploy Databricks cluster"
+}
+
+variable "databricks_cluster_size" {
+  type        = number
+  default     = 1
+  description = "Number of workers in Databricks cluster"
+}
+
+variable "adf_enabled" {
+  type        = bool
+  default     = true
+  description = "Whether to deploy Azure Data Factory"
+}
+
+variable "delegation" {
+  type = object({
+    name = string
+    service_delegation = object({
+      name    = string
+      actions = list(string)
+    })
+  })
+  default = null
 }

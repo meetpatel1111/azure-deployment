@@ -24,6 +24,8 @@ locals {
   dbr_public_subnet_cidr  = "10.60.11.0/24"
 }
 
+data "azurerm_client_config" "current" {}
+
 # ------------------------------
 # RESOURCE GROUP (must be above all modules)
 # ------------------------------
@@ -72,6 +74,7 @@ module "vnet" {
 # ------------------------------
 # SUBNET
 # ------------------------------
+
 module "subnet" {
   source              = "./modules/subnet"
   name                = local.subnet_name
@@ -87,8 +90,23 @@ module "dbr_private_subnet" {
   vnet_name           = module.vnet.vnet_name
   cidr                = local.dbr_private_subnet_cidr
 
+  # Required for Databricks VNet injection
   private_endpoint_network_policies             = "Disabled"
   private_link_service_network_policies_enabled = true
+
+  delegation = {
+    name = "databricks-private-delegation"
+
+    service_delegation = {
+      name = "Microsoft.Databricks/workspaces"
+
+      # Official required actions
+      actions = [
+        "Microsoft.Network/virtualNetworks/subnets/join/action",
+        "Microsoft.Network/virtualNetworks/subnets/prepareNetworkPolicies/action"
+      ]
+    }
+  }
 }
 
 module "dbr_public_subnet" {
@@ -100,6 +118,19 @@ module "dbr_public_subnet" {
 
   private_endpoint_network_policies             = "Disabled"
   private_link_service_network_policies_enabled = true
+
+  delegation = {
+    name = "databricks-public-delegation"
+
+    service_delegation = {
+      name = "Microsoft.Databricks/workspaces"
+
+      actions = [
+        "Microsoft.Network/virtualNetworks/subnets/join/action",
+        "Microsoft.Network/virtualNetworks/subnets/prepareNetworkPolicies/action"
+      ]
+    }
+  }
 }
 
 # ------------------------------
@@ -175,17 +206,21 @@ module "vm" {
   vm_size              = var.vm_size
   tags                 = var.tags
 }
-
 module "databricks_workspace" {
-  count  = var.databricks_enabled ? 1 : 0
-  source = "./modules/databricks_workspace"
+  count = var.databricks_enabled ? 1 : 0
 
+  source                      = "./modules/databricks_workspace"
   name                        = local.databricks_name
   location                    = var.location
   resource_group_name         = azurerm_resource_group.rg.name
-  sku                         = var.databricks_sku
+  sku                         = "premium"
   managed_resource_group_name = local.databricks_mrg
   tags                        = var.tags
+
+  no_public_ip        = true
+  virtual_network_id  = module.vnet.vnet_id
+  public_subnet_name  = module.dbr_public_subnet.subnet_name
+  private_subnet_name = module.dbr_private_subnet.subnet_name
 }
 
 module "data_factory" {
@@ -207,6 +242,8 @@ module "databricks_cluster" {
   spark_version = "13.3.x-scala2.12"
   node_type_id  = "Standard_F4"
   num_workers   = var.databricks_cluster_size
+
+  policy_id = databricks_cluster_policy.standard.id
 
   depends_on = [
     module.databricks_workspace
@@ -231,4 +268,68 @@ resource "azurerm_role_assignment" "uami_to_vnet" {
   scope                = module.vnet.vnet_id
   role_definition_name = "Contributor"
   principal_id         = module.uami.principal_id
+}
+
+module "key_vault" {
+  source              = "./modules/key_vault"
+  name                = "kv-${local.suffix}"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+  tags                = var.tags
+}
+
+resource "azurerm_databricks_access_connector" "this" {
+  name                = "ac-${local.suffix}"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = var.location
+
+  identity {
+    type = "SystemAssigned"
+  }
+}
+
+resource "azurerm_key_vault_access_policy" "dbr_kv" {
+  key_vault_id       = module.key_vault.id
+  tenant_id          = data.azurerm_client_config.current.tenant_id
+  object_id          = azurerm_databricks_access_connector.this.identity[0].principal_id
+  secret_permissions = ["Get", "List"]
+}
+
+resource "databricks_secret_scope" "kv_scope" {
+  name = "kv-scope"
+
+  keyvault_metadata {
+    resource_id = module.key_vault.id
+    dns_name    = module.key_vault.vault_uri
+  }
+}
+
+resource "databricks_cluster_policy" "standard" {
+  name        = "standard-cluster-policy"
+  description = "Restricts node types, enforces auto-termination, max workers."
+
+  definition = jsonencode({
+    spark_version = {
+      type   = "fixed"
+      value  = "13.3.x-scala2.12"
+      hidden = false
+    }
+    autotermination_minutes = {
+      type    = "range"
+      min     = 10
+      max     = 120
+      default = 30
+    }
+    num_workers = {
+      type    = "range"
+      min     = 1
+      max     = 4
+      default = 1
+    }
+    node_type_id = {
+      type   = "allowlist"
+      values = ["*"]
+    }
+  })
 }
