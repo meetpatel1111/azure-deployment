@@ -28,3 +28,7 @@ allowed_rdp_cidrs = [
   "117.217.116.146/32",
   "103.147.161.162/32"
 ]
+
+azure_client_id     = ""
+azure_client_secret = ""
+azure_tenant_id     = ""

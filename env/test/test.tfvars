@@ -16,3 +16,7 @@ adf_enabled                = true
 databricks_enabled         = false
 databricks_cluster_enabled = false
 databricks_cluster_size    = 1
+
+azure_client_id     = ""
+azure_client_secret = ""
+azure_tenant_id     = ""
