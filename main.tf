@@ -238,6 +238,10 @@ module "databricks_cluster" {
 
   source = "./modules/databricks_cluster"
 
+  providers = {
+    databricks = databricks.workspace
+  }
+
   cluster_name  = "cluster-${local.suffix}"
   spark_version = "13.3.x-scala2.12"
   node_type_id  = "Standard_F4"
@@ -297,7 +301,8 @@ resource "azurerm_key_vault_access_policy" "dbr_kv" {
 }
 
 resource "databricks_secret_scope" "kv_scope" {
-  name = "kv-scope"
+  name     = "kv-scope"
+  provider = databricks.workspace
 
   keyvault_metadata {
     resource_id = module.key_vault.id
@@ -308,6 +313,7 @@ resource "databricks_secret_scope" "kv_scope" {
 resource "databricks_cluster_policy" "standard" {
   name        = "standard-cluster-policy"
   description = "Restricts node types, enforces auto-termination, max workers."
+  provider    = databricks.workspace
 
   definition = jsonencode({
     spark_version = {

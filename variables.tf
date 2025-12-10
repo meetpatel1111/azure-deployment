@@ -76,6 +76,9 @@ variable "azure_tenant_id" {
   type        = string
 }
 
+variable "azure_subscription_id" {
+}
+
 # Feature flags (if you don’t already have these)
 variable "databricks_enabled" {
   type        = bool
@@ -110,4 +113,10 @@ variable "delegation" {
     })
   })
   default = null
+}
+
+variable "databricks_workspace_url" {
+}
+
+variable "databricks_workspace_id" {
 }

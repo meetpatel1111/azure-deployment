@@ -24,13 +24,20 @@ provider "azuread" {}
 # Databricks workspace provider using client secret
 # NOTE: this is evaluated using existing workspace in state on re-apply
 provider "databricks" {
-  # These come from GitHub Actions via TF_VAR_*
+  auth_type           = "azure-client-secret"
+  azure_client_id     = var.azure_client_id
+  azure_client_secret = var.azure_client_secret
+  azure_tenant_id     = var.azure_tenant_id
+}
+
+# Workspace provider - only used AFTER workspace exists
+provider "databricks" {
+  alias               = "workspace"
   auth_type           = "azure-client-secret"
   azure_client_id     = var.azure_client_id
   azure_client_secret = var.azure_client_secret
   azure_tenant_id     = var.azure_tenant_id
 
-  # After first apply, these values are in state & can be used
   azure_workspace_resource_id = module.databricks_workspace[0].workspace_id
   host                        = module.databricks_workspace[0].workspace_url
 }
