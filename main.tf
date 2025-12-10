@@ -182,7 +182,7 @@ resource "azurerm_network_interface_security_group_association" "vm_nsg" {
 # VM subnet
 resource "azurerm_subnet_network_security_group_association" "vm_subnet" {
   subnet_id                 = module.subnet.subnet_id
-  network_security_group_id = module.nsg_vm.nsg_id
+  network_security_group_id = module.nsg.nsg_id
 }
 
 # Databricks private subnet
