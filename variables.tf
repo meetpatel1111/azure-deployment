@@ -111,9 +111,3 @@ variable "delegation" {
   })
   default = null
 }
-
-variable "databricks_workspace_url" {
-}
-
-variable "databricks_workspace_id" {
-}
