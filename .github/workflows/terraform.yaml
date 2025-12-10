@@ -21,6 +21,12 @@ on:
           - plan
           - apply
           - destroy
+          - destroy-target
+
+      module_target:
+        description: "Terraform target module (only for destroy-target)"
+        required: false
+        default: ""
 
 permissions:
   id-token: write
@@ -148,3 +154,20 @@ jobs:
         if: env.ACTION == 'destroy'
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform destroy -auto-approve -var-file=${{ env.TF_VAR_FILE }}
+
+      # Terraform Destroy (Targeted)
+      - name: Terraform Destroy Targeted Module
+        if: env.ACTION == 'destroy-target'
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          if [ -z "${{ github.event.inputs.module_target }}" ]; then
+            echo "ERROR: module_target is required for destroy-target."
+            exit 1
+          fi
+
+          echo "Destroying only module: ${{ github.event.inputs.module_target }}"
+
+          terraform destroy \
+            -target=${{ github.event.inputs.module_target }} \
+            -auto-approve \
+            -var-file=${{ env.TF_VAR_FILE }}
