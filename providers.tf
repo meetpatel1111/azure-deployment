@@ -29,15 +29,14 @@ provider "databricks" {
   azure_client_secret = var.azure_client_secret
   azure_tenant_id     = var.azure_tenant_id
 
+  # Simplified - only reference the module output
   azure_workspace_resource_id = (
-    length(module.databricks_workspace) > 0 ?
-    module.databricks_workspace[0].workspace_id :
-    data.azurerm_databricks_workspace.existing[0].id
+    var.databricks_enabled && length(module.databricks_workspace) > 0 ?
+    module.databricks_workspace[0].workspace_id : null
   )
 
   host = (
-    length(module.databricks_workspace) > 0 ?
-    "https://${module.databricks_workspace[0].workspace_url}" :
-    "https://${data.azurerm_databricks_workspace.existing[0].workspace_url}"
+    var.databricks_enabled && length(module.databricks_workspace) > 0 ?
+    "https://${module.databricks_workspace[0].workspace_url}" : null
   )
 }
