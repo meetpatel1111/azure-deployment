@@ -149,7 +149,6 @@ module "nsg" {
   tags = var.tags
 }
 
-
 resource "azurerm_network_interface_security_group_association" "vm_nsg" {
   network_interface_id      = module.nic.nic_id
   network_security_group_id = module.nsg.nsg_id
@@ -158,6 +157,60 @@ resource "azurerm_network_interface_security_group_association" "vm_nsg" {
 resource "azurerm_subnet_network_security_group_association" "subnet_nsg" {
   subnet_id                 = module.subnet.subnet_id
   network_security_group_id = module.nsg.nsg_id
+}
+
+module "dbr_private_subnet" {
+  source              = "./modules/subnet"
+  name                = "subnet-${local.suffix}-dbr-private"
+  resource_group_name = azurerm_resource_group.rg.name
+  vnet_name           = module.vnet.vnet_name
+  cidr                = local.dbr_private_subnet_cidr
+
+  private_endpoint_network_policies             = "Disabled"
+  private_link_service_network_policies_enabled = true
+
+  delegation = {
+    name = "databricks-private-delegation"
+    service_delegation = {
+      name = "Microsoft.Databricks/workspaces"
+      actions = [
+        "Microsoft.Network/virtualNetworks/subnets/join/action",
+        "Microsoft.Network/virtualNetworks/subnets/prepareNetworkPolicies/action",
+      ]
+    }
+  }
+}
+
+module "dbr_public_subnet" {
+  source              = "./modules/subnet"
+  name                = "subnet-${local.suffix}-dbr-public"
+  resource_group_name = azurerm_resource_group.rg.name
+  vnet_name           = module.vnet.vnet_name
+  cidr                = local.dbr_public_subnet_cidr
+
+  private_endpoint_network_policies             = "Disabled"
+  private_link_service_network_policies_enabled = true
+
+  delegation = {
+    name = "databricks-public-delegation"
+    service_delegation = {
+      name = "Microsoft.Databricks/workspaces"
+      actions = [
+        "Microsoft.Network/virtualNetworks/subnets/join/action",
+        "Microsoft.Network/virtualNetworks/subnets/prepareNetworkPolicies/action",
+      ]
+    }
+  }
+}
+
+resource "azurerm_subnet_network_security_group_association" "dbr_private" {
+  subnet_id                 = module.dbr_private_subnet.subnet_id
+  network_security_group_id = azurerm_network_security_group.dbr_private.id
+}
+
+resource "azurerm_subnet_network_security_group_association" "dbr_public" {
+  subnet_id                 = module.dbr_public_subnet.subnet_id
+  network_security_group_id = azurerm_network_security_group.dbr_public.id
 }
 
 # ------------------------------
@@ -206,6 +259,7 @@ module "vm" {
   vm_size              = var.vm_size
   tags                 = var.tags
 }
+
 module "databricks_workspace" {
   count = var.databricks_enabled ? 1 : 0
 
@@ -221,6 +275,16 @@ module "databricks_workspace" {
   virtual_network_id  = module.vnet.vnet_id
   public_subnet_name  = module.dbr_public_subnet.subnet_name
   private_subnet_name = module.dbr_private_subnet.subnet_name
+
+  public_subnet_network_security_group_association_id  = azurerm_subnet_network_security_group_association.dbr_public.id
+  private_subnet_network_security_group_association_id = azurerm_subnet_network_security_group_association.dbr_private.id
+
+  depends_on = [
+    module.dbr_private_subnet,
+    module.dbr_public_subnet,
+    azurerm_subnet_network_security_group_association.dbr_private,
+    azurerm_subnet_network_security_group_association.dbr_public,
+  ]
 }
 
 module "data_factory" {

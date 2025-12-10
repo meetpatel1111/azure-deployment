@@ -44,3 +44,15 @@ variable "private_subnet_name" {
   type        = string
   description = "Private subnet name for Databricks"
 }
+
+variable "public_subnet_network_security_group_association_id" {
+  description = "NSG association ID for public subnet"
+  type        = string
+  nullable    = true
+}
+
+variable "private_subnet_network_security_group_association_id" {
+  description = "NSG association ID for private subnet"
+  type        = string
+  nullable    = true
+}
