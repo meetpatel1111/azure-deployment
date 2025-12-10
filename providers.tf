@@ -30,7 +30,6 @@ provider "databricks" {
   azure_tenant_id     = var.azure_tenant_id
 }
 
-# Workspace provider - only used AFTER workspace exists
 provider "databricks" {
   alias               = "workspace"
   auth_type           = "azure-client-secret"
@@ -38,6 +37,15 @@ provider "databricks" {
   azure_client_secret = var.azure_client_secret
   azure_tenant_id     = var.azure_tenant_id
 
-  azure_workspace_resource_id = module.databricks_workspace[0].workspace_id
-  host                        = module.databricks_workspace[0].workspace_url
+  azure_workspace_resource_id = (
+    length(module.databricks_workspace) > 0 ?
+    module.databricks_workspace[0].workspace_id :
+    data.azurerm_databricks_workspace.existing[0].id
+  )
+
+  host = (
+    length(module.databricks_workspace) > 0 ?
+    module.databricks_workspace[0].workspace_url :
+    data.azurerm_databricks_workspace.existing[0].workspace_url
+  )
 }

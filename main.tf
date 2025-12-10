@@ -26,6 +26,14 @@ locals {
 
 data "azurerm_client_config" "current" {}
 
+# Lookup existing Databricks workspace (used when targeting destroys)
+data "azurerm_databricks_workspace" "existing" {
+  count = var.databricks_enabled ? 1 : 0
+
+  name                = local.databricks_name
+  resource_group_name = local.rg_name
+}
+
 # ------------------------------
 # RESOURCE GROUP (must be above all modules)
 # ------------------------------
