@@ -241,13 +241,26 @@ module "data_factory" {
   tags                = var.tags
 }
 
+
+provider "databricks" {
+  alias = "cluster_auth"
+  # Configuration for Databricks provider when used with databricks_cluster module
+  # It picks up ARM_CLIENT_ID, ARM_CLIENT_SECRET, ARM_TENANT_ID from environment variables
+  # which are exported by the GitHub Actions workflow.
+  host = (
+    length(module.databricks_workspace) > 0 ?
+    module.databricks_workspace[0].workspace_url :
+    data.azurerm_databricks_workspace.existing[0].workspace_url
+  )
+}
+
 module "databricks_cluster" {
   count = var.databricks_enabled && var.databricks_cluster_enabled ? 1 : 0
 
   source = "./modules/databricks_cluster"
 
   providers = {
-    databricks = databricks.workspace
+    databricks = databricks.cluster_auth
   }
 
   cluster_name  = "cluster-${local.suffix}"
@@ -268,6 +281,9 @@ resource "azurerm_role_assignment" "uami_to_workspace" {
   principal_id         = module.uami.principal_id
 
   depends_on = [module.databricks_workspace]
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "azurerm_role_assignment" "uami_to_storage" {
