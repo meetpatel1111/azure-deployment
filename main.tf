@@ -137,15 +137,17 @@ module "dbr_public_subnet" {
 # NSG
 # ------------------------------
 # VM NSG
-module "nsg_vm" {
-  source              = "./modules/nsg"
-  name                = "nsg-${local.suffix}-vm"
+module "nsg" {
+  source = "./modules/nsg"
+
+  name                = local.nsg_name
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
 
   allowed_ssh_cidrs = var.allowed_ssh_cidrs
   allowed_rdp_cidrs = var.allowed_rdp_cidrs
-  tags              = var.tags
+
+  tags = var.tags
 }
 
 # Databricks PRIVATE subnet NSG
