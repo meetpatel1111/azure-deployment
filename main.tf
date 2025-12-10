@@ -106,13 +106,18 @@ module "dbr_public_subnet" {
 # NSG
 # ------------------------------
 module "nsg" {
-  source              = "./modules/nsg"
+  source = "./modules/nsg"
+
   name                = local.nsg_name
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
-  allowed_ssh_cidrs   = var.allowed_ssh_cidrs
-  tags                = var.tags
+
+  allowed_ssh_cidrs = var.allowed_ssh_cidrs
+  allowed_rdp_cidrs = var.allowed_rdp_cidrs
+
+  tags = var.tags
 }
+
 
 resource "azurerm_network_interface_security_group_association" "vm_nsg" {
   network_interface_id      = module.nic.nic_id
