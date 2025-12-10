@@ -175,10 +175,6 @@ module "nsg_dbr_public" {
   tags              = var.tags
 }
 
-resource "azurerm_network_interface_security_group_association" "vm_nsg" {
-  network_interface_id      = module.nic.nic_id
-  network_security_group_id = module.nsg.nsg_id
-}
 # VM subnet
 resource "azurerm_subnet_network_security_group_association" "vm_subnet" {
   subnet_id                 = module.subnet.subnet_id
