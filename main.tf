@@ -18,8 +18,10 @@ locals {
   # Storage account naming (no hyphens allowed)
   storage_account_name = "st${replace(local.suffix, "-", "")}"
 
-  vnet_cidr   = "10.60.0.0/16"
-  subnet_cidr = "10.60.1.0/24"
+  vnet_cidr               = "10.60.0.0/16"
+  subnet_cidr             = "10.60.1.0/24"
+  dbr_private_subnet_cidr = "10.60.10.0/24"
+  dbr_public_subnet_cidr  = "10.60.11.0/24"
 }
 
 # ------------------------------
@@ -78,6 +80,28 @@ module "subnet" {
   vnet_name           = module.vnet.vnet_name
 }
 
+module "dbr_private_subnet" {
+  source              = "./modules/subnet"
+  name                = "subnet-${local.suffix}-dbr-private"
+  resource_group_name = azurerm_resource_group.rg.name
+  vnet_name           = module.vnet.vnet_name
+  cidr                = local.dbr_private_subnet_cidr
+
+  private_endpoint_network_policies             = "Disabled"
+  private_link_service_network_policies_enabled = true
+}
+
+module "dbr_public_subnet" {
+  source              = "./modules/subnet"
+  name                = "subnet-${local.suffix}-dbr-public"
+  resource_group_name = azurerm_resource_group.rg.name
+  vnet_name           = module.vnet.vnet_name
+  cidr                = local.dbr_public_subnet_cidr
+
+  private_endpoint_network_policies             = "Disabled"
+  private_link_service_network_policies_enabled = true
+}
+
 # ------------------------------
 # NSG
 # ------------------------------
@@ -86,7 +110,18 @@ module "nsg" {
   name                = local.nsg_name
   location            = var.location
   resource_group_name = azurerm_resource_group.rg.name
+  allowed_ssh_cidrs   = var.allowed_ssh_cidrs
   tags                = var.tags
+}
+
+resource "azurerm_network_interface_security_group_association" "vm_nsg" {
+  network_interface_id      = module.nic.nic_id
+  network_security_group_id = module.nsg.nsg_id
+}
+
+resource "azurerm_subnet_network_security_group_association" "subnet_nsg" {
+  subnet_id                 = module.subnet.subnet_id
+  network_security_group_id = module.nsg.nsg_id
 }
 
 # ------------------------------

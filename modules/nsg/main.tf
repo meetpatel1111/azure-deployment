@@ -5,14 +5,86 @@ resource "azurerm_network_security_group" "this" {
   tags                = var.tags
 }
 
+# ------------------------------
+# SSH RULE (dynamic per CIDR)
+# ------------------------------
 resource "azurerm_network_security_rule" "ssh" {
-  name                        = "allow_ssh"
-  priority                    = 1001
+  count                       = length(var.allowed_ssh_cidrs)
+  name                        = "allow_ssh_${count.index}"
+  priority                    = 100 + count.index
   direction                   = "Inbound"
   access                      = "Allow"
   protocol                    = "Tcp"
   source_port_range           = "*"
   destination_port_range      = "22"
+  source_address_prefix       = var.allowed_ssh_cidrs[count.index]
+  destination_address_prefix  = "*"
+  resource_group_name         = var.resource_group_name
+  network_security_group_name = azurerm_network_security_group.this.name
+}
+
+# --------------------------------------------
+# RDP (3389)
+# --------------------------------------------
+resource "azurerm_network_security_rule" "rdp" {
+  name                        = "allow_rdp"
+  priority                    = 110
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "3389"
+  source_address_prefix       = var.allowed_ssh_cidrs[count.index]
+  destination_address_prefix  = "*"
+  resource_group_name         = var.resource_group_name
+  network_security_group_name = azurerm_network_security_group.this.name
+}
+
+# ------------------------------
+# Allow HTTP (80)
+# ------------------------------
+resource "azurerm_network_security_rule" "http" {
+  name                        = "allow_http"
+  priority                    = 200
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "80"
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  resource_group_name         = var.resource_group_name
+  network_security_group_name = azurerm_network_security_group.this.name
+}
+
+# ------------------------------
+# Allow HTTPS (443)
+# ------------------------------
+resource "azurerm_network_security_rule" "https" {
+  name                        = "allow_https"
+  priority                    = 210
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "443"
+  source_address_prefix       = "*"
+  destination_address_prefix  = "*"
+  resource_group_name         = var.resource_group_name
+  network_security_group_name = azurerm_network_security_group.this.name
+}
+
+# ------------------------------
+# DENY ALL INBOUND (CATCH ALL)
+# ------------------------------
+resource "azurerm_network_security_rule" "deny_all_inbound" {
+  name                        = "deny_all_inbound"
+  priority                    = 400
+  direction                   = "Inbound"
+  access                      = "Deny"
+  protocol                    = "*"
+  source_port_range           = "*"
+  destination_port_range      = "*"
   source_address_prefix       = "*"
   destination_address_prefix  = "*"
   resource_group_name         = var.resource_group_name

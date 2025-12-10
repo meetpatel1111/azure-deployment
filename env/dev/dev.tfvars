@@ -16,3 +16,10 @@ adf_enabled                = true
 databricks_enabled         = true
 databricks_cluster_enabled = true
 databricks_cluster_size    = 1
+
+allowed_ssh_cidrs = [
+  "123.252.146.166/32",
+  "117.217.116.146/32",
+  "103.147.161.162/32",
+  "152.58.33.144/16",
+]
