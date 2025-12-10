@@ -159,50 +159,6 @@ resource "azurerm_subnet_network_security_group_association" "subnet_nsg" {
   network_security_group_id = module.nsg.nsg_id
 }
 
-module "dbr_private_subnet" {
-  source              = "./modules/subnet"
-  name                = "subnet-${local.suffix}-dbr-private"
-  resource_group_name = azurerm_resource_group.rg.name
-  vnet_name           = module.vnet.vnet_name
-  cidr                = local.dbr_private_subnet_cidr
-
-  private_endpoint_network_policies             = "Disabled"
-  private_link_service_network_policies_enabled = true
-
-  delegation = {
-    name = "databricks-private-delegation"
-    service_delegation = {
-      name = "Microsoft.Databricks/workspaces"
-      actions = [
-        "Microsoft.Network/virtualNetworks/subnets/join/action",
-        "Microsoft.Network/virtualNetworks/subnets/prepareNetworkPolicies/action",
-      ]
-    }
-  }
-}
-
-module "dbr_public_subnet" {
-  source              = "./modules/subnet"
-  name                = "subnet-${local.suffix}-dbr-public"
-  resource_group_name = azurerm_resource_group.rg.name
-  vnet_name           = module.vnet.vnet_name
-  cidr                = local.dbr_public_subnet_cidr
-
-  private_endpoint_network_policies             = "Disabled"
-  private_link_service_network_policies_enabled = true
-
-  delegation = {
-    name = "databricks-public-delegation"
-    service_delegation = {
-      name = "Microsoft.Databricks/workspaces"
-      actions = [
-        "Microsoft.Network/virtualNetworks/subnets/join/action",
-        "Microsoft.Network/virtualNetworks/subnets/prepareNetworkPolicies/action",
-      ]
-    }
-  }
-}
-
 resource "azurerm_subnet_network_security_group_association" "dbr_private" {
   subnet_id                 = module.dbr_private_subnet.subnet_id
   network_security_group_id = azurerm_network_security_group.dbr_private.id
