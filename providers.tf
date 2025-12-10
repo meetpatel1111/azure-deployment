@@ -21,32 +21,7 @@ provider "azurerm" {
 
 provider "azuread" {}
 
-# Databricks workspace provider using client secret
-# NOTE: this is evaluated using existing workspace in state on re-apply
-terraform {
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 4.0"
-    }
-    databricks = {
-      source  = "databricks/databricks"
-      version = "~> 1.99.0"
-    }
-    azuread = {
-      source  = "hashicorp/azuread"
-      version = "~> 2.47.0"
-    }
-  }
-}
-
-provider "azurerm" {
-  features {}
-}
-
-provider "azuread" {}
-
-# SINGLE Databricks provider - handles everything
+# Single Databricks provider for workspace operations
 provider "databricks" {
   alias               = "workspace"
   auth_type           = "azure-client-secret"
